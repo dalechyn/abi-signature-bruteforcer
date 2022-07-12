@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
-	"time"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -27,45 +26,32 @@ func isHashValid(hash string, target string) bool {
 	return true
 }
 
-// functionName - *
-func deeper(functionName string, target string, resultChannel chan<- string) {
-	hash := sha3.NewLegacyKeccak256()
-
-	cleanName := strings.Replace(functionName, "*", "", 1)
-	
-	hash.Write([]byte(cleanName))
-	buf := hash.Sum(nil)
-
-	if isHashValid(hex.EncodeToString(buf), target) {
-		resultChannel <- cleanName
-	} else {
-		for _, letter := range alphabet {
-			newName := strings.Replace(functionName, "*", letter + "*", 1)
-			go deeper(newName, target, resultChannel)
-		}
-	}
-}
-
-func heartbeat() {
-	fmt.Println("Still searching...")
-  time.Sleep(2000)
-}
-
 func StartBruteforcing(functionName string, target string) {
-	resultChannel := make(chan string)
+	for combination := range GenerateCombinations(8) {
+		hash := sha3.NewLegacyKeccak256()
 
-	for _, letter := range alphabet {
-		newName := strings.Replace(functionName, "*", letter + "*", 1)
+		cleanName := strings.Replace(functionName, "*", combination, 1)
+		
+		hash.Write([]byte(cleanName))
+		buf := hash.Sum(nil)
 
-		go deeper(newName, target, resultChannel)
-	}
-
-	for {
-		select {
-			case result := <-resultChannel:
-				fmt.Println("Success! Result is ", result)
-				return
-			default: heartbeat()
-		}
+		if isHashValid(hex.EncodeToString(buf), target) {
+			fmt.Println("Success! Result is ", cleanName)
+			return
+		} 
 	}
 }
+
+// 0
+// 00
+// 000
+
+// 1
+// ..
+// X
+//.. -> 
+//   
+
+// |x| <-32 = 32
+// |x|x| <-32 = 32^2
+// |x|x|x| <-32 = 32^3
